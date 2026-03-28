@@ -7,21 +7,17 @@ from datetime import datetime, timedelta
 def main():
     wb = xw.Book.caller()
     dashboard = wb.sheets['Dashboard']
-    results_sheet = wb.sheets['Results']
+    dataset_sheet = wb.sheets['Dataset']
+    inputs_sheet = wb.sheets['Inputs']
 
     # 1. Setup and Stakeholder Input
     dashboard.range('A8').value = "Status: Initializing..."
     mission_impact = str(dashboard.range('B3').value or "Medium").strip()
 
-    # Reliable Row Counting
-    last_row = dashboard.range('A' + str(dashboard.cells.last_cell.row)).end('up').row
-    if last_row < 11:
-        last_row = 11
-        
-    tech_rows = dashboard.range(f'A11:A{last_row}').value
+    # Read tech stack from Inputs sheet A11:A1000
+    tech_rows = inputs_sheet.range('A11:A1000').value
     if not isinstance(tech_rows, list):
         tech_rows = [tech_rows]
-    
     tech_stack = [str(x).strip().lower() for x in tech_rows if x]
 
     # 2. Application Programming Interface Key with Masked Input
@@ -118,39 +114,43 @@ def main():
 
         final_output.append([pub_date, cve_id, priority, is_kev, base_score, description])
 
-    # 6. Output to Results Tab
-    results_sheet.clear()
+    # 6. Output to Dataset Tab
+    dataset_sheet.clear()
     col_headers = ["Date Published", "Common Vulnerabilities and Exposures Identification", "Priority", "Known Exploited Vulnerabilities Status", "Score", "Description"]
-    results_sheet.range('A1').value = col_headers
-    results_sheet.range('A2').value = final_output
-    results_sheet.range('A:F').api.WrapText = False
-    results_sheet.range('A:F').rows.autofit()
+    dataset_sheet.range('A1').value = col_headers
+    dataset_sheet.range('A2').value = final_output
+    dataset_sheet.range('A:F').api.WrapText = False
+    dataset_sheet.range('A:F').rows.autofit()
 
-    # 7. Dashboard Mapping (Strict B to G limit)
-    dashboard.range(f'B11:G{max(11, last_row)}').value = "No Match"
-    
+    # 7. Dashboard Mapping - one row per CVE match per tech stack item
     rank_map = {"ACT (Immediate)": 3, "ATTEND (Prioritize)": 2, "TRACK": 1}
 
-    for row_idx, tech_name in enumerate(tech_stack, start=11):
+    # Clear previous dashboard output area
+    dashboard.range('A11:G10000').clear_contents()
+
+    dashboard_rows = []
+    for tech_name in tech_stack:
         if not tech_name:
             continue
-        
-        tech_matches = [r for r in final_output if tech_name in r[5].lower()]
-        
-        if tech_matches:
-            tech_matches.sort(key=lambda x: (rank_map.get(x[2], 0), x[4] if x[4] != "N/A" else 0), reverse=True)
-            best = tech_matches[0]
-            
-            dashboard.range(f'B{row_idx}:G{row_idx}').value = [
-                best[2], # B: Priority
-                best[0], # C: Date
-                best[1], # D: CVE ID
-                best[3], # E: KEV Status
-                best[4], # F: Score
-                best[5]  # G: Description
-            ]
 
-    dashboard.range('A8').value = f"Status: Found {len(final_output)} Threats"
+        tech_matches = [r for r in final_output if tech_name in r[5].lower()]
+        tech_matches.sort(key=lambda x: (rank_map.get(x[2], 0), x[4] if x[4] != "N/A" else 0), reverse=True)
+
+        for match in tech_matches:
+            dashboard_rows.append([
+                tech_name,  # A: Technology
+                match[2],   # B: Priority
+                match[0],   # C: Date Published
+                match[1],   # D: CVE ID
+                match[3],   # E: KEV Status
+                match[4],   # F: Score
+                match[5]    # G: Description
+            ])
+
+    if dashboard_rows:
+        dashboard.range('A11').value = dashboard_rows
+
+    dashboard.range('A8').value = f"Status: Found {len(final_output)} Threats | {len(dashboard_rows)} Tech Matches"
 
 if __name__ == "__main__":
     try:

@@ -15,19 +15,63 @@ On each run the tool:
 ## Prerequisites
 
 - Python 3.10 or higher
-- xlwings-enabled Excel workbook (VulnTracker.xlsm)
-- NVD API key (free from https://nvd.nist.gov/developers/request-an-api-key)
+- Microsoft Excel (Windows)
+- NVD API key — free from https://nvd.nist.gov/developers/request-an-api-key
 
 ## Setup
 
-1. Clone or download this project
+### 1. Clone the repo
 
-2. Install dependencies:
+```
+git clone https://github.com/FutureZeitgeist/vuln-tracker.git
+cd vuln-tracker
+```
+
+### 2. Create and activate a virtual environment
+
+```
+python -m venv venv
+venv\Scripts\activate
+```
+
+### 3. Install dependencies
+
 ```
 pip install -r requirements.txt
 ```
 
-3. Open `VulnTracker.xlsm` in Excel
+### 4. Install the xlwings Excel add-in
+
+```
+xlwings addin install
+```
+
+### 5. Enable VBA project access in Excel
+
+The setup script needs permission to add a macro button to the workbook.
+
+> Excel → Options → Trust Center → Trust Center Settings → Macro Settings
+> → Check **Trust access to the VBA project object model**
+
+This only needs to be done once. It can be turned off again after setup if preferred.
+
+### 6. Run the setup script
+
+```
+python setup_workbook.py
+```
+
+This generates `VulnTracker.xlsm` in the project folder with all sheets, headers, and the **Run Tracker** button pre-configured.
+
+> If VBA access was not enabled, the workbook is still created but without the button.
+> See the on-screen instructions printed by the script to add it manually.
+
+## Usage
+
+1. Open `VulnTracker.xlsm`
+2. Set mission impact in the **Dashboard** sheet cell B3 (`Low`, `Medium`, or `High`)
+3. Add your technologies to the **Input** sheet starting at A11 (one per row)
+4. Click **Run Tracker** on the Dashboard and enter your NVD API key when prompted (input is masked)
 
 ## Workbook Structure
 
@@ -36,13 +80,6 @@ pip install -r requirements.txt
 | Dashboard | Mission impact setting (B3), run status (A8), and CVE results by tech stack (A11 onward) |
 | Input | Tech stack entries — add one technology per row starting at A11 |
 | Dataset | Full CVE dataset from the last 30 days with priority, KEV status, and CVSS scores |
-
-## Usage
-
-1. Open `VulnTracker.xlsm`
-2. Set mission impact in the **Dashboard** sheet cell B3 (`Low`, `Medium`, or `High`)
-3. Add technologies to the **Input** sheet starting at A11 (one per row)
-4. Click the run button — enter your NVD API key when prompted (input is masked)
 
 ## Dashboard Output (A11 onward)
 

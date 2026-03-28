@@ -8,7 +8,7 @@ def main():
     wb = xw.Book.caller()
     dashboard = wb.sheets['Dashboard']
     dataset_sheet = wb.sheets['Dataset']
-    inputs_sheet = wb.sheets['Inputs']
+    inputs_sheet = wb.sheets['Input']
 
     # 1. Setup and Stakeholder Input
     dashboard.range('A8').value = "Status: Initializing..."
